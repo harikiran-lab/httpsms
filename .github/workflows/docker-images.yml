@@ -1,0 +1,92 @@
+name: docker-images
+
+# Builds the api and web images from this repo and pushes them to GitHub Container Registry:
+#   ghcr.io/<owner>/httpsms-api
+#   ghcr.io/<owner>/httpsms-web
+# Pull these on Unraid instead of building from source. See deploy/README.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "api/**"
+      - "web/**"
+      - "deploy/web.env"
+      - ".github/workflows/docker-images.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve image owner and tags
+        id: meta
+        run: |
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "date=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Inject web/.env (Nuxt bakes config at build time)
+        run: cp deploy/web.env web/.env && echo "GITHUB_SHA=${GITHUB_SHA}" >> web/.env
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push api
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            GIT_COMMIT=${{ steps.meta.outputs.sha }}
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.owner }}/httpsms-api:latest
+            ghcr.io/${{ steps.meta.outputs.owner }}/httpsms-api:${{ steps.meta.outputs.sha }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/httpsms-api:${{ steps.meta.outputs.date }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+
+      - name: Build and push web
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.owner }}/httpsms-web:latest
+            ghcr.io/${{ steps.meta.outputs.owner }}/httpsms-web:${{ steps.meta.outputs.sha }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/httpsms-web:${{ steps.meta.outputs.date }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+
+      - name: Summary
+        run: |
+          {
+            echo "### Images pushed"
+            echo '```'
+            echo "ghcr.io/${{ steps.meta.outputs.owner }}/httpsms-api:latest"
+            echo "ghcr.io/${{ steps.meta.outputs.owner }}/httpsms-web:latest"
+            echo '```'
+            echo "Commit: ${{ steps.meta.outputs.sha }}"
+          } >> "$GITHUB_STEP_SUMMARY"

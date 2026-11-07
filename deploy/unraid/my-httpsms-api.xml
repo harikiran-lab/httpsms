@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>httpsms-api</Name>
+  <Repository>ghcr.io/harikiran-lab/httpsms-api:latest</Repository>
+  <Registry>https://github.com/harikiran-lab?tab=packages</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/NdoleStudio/httpsms</Support>
+  <Project>https://github.com/NdoleStudio/httpsms</Project>
+  <Overview>httpSMS API (Go). Turns an Android phone into an SMS gateway. Requires an external PostgreSQL and Redis, plus a Firebase project for auth and push notifications. Image is built by GitHub Actions and pulled from GHCR.</Overview>
+  <Category>Network:Messenger</Category>
+  <WebUI>http://[IP]:[PORT:8000]/</WebUI>
+  <TemplateURL/>
+  <Icon>https://raw.githubusercontent.com/NdoleStudio/httpsms/main/web/static/icon.png</Icon>
+  <ExtraParams>--restart=unless-stopped --add-host=host.docker.internal:host-gateway</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>The GHCR package must be public, or run docker login ghcr.io on Unraid first.</Requires>
+
+  <!-- Port -->
+  <Config Name="API Port" Target="8000" Default="8000" Mode="tcp" Description="HTTP port for the API" Type="Port" Display="always" Required="true" Mask="false">8000</Config>
+
+  <!-- Runtime -->
+  <Config Name="ENV" Target="ENV" Default="local" Mode="" Description="local = console logging, no cloud telemetry" Type="Variable" Display="advanced" Required="true" Mask="false">local</Config>
+  <Config Name="APP_PORT" Target="APP_PORT" Default="8000" Mode="" Description="Port the API listens on inside the container (match the Port mapping above)" Type="Variable" Display="advanced" Required="true" Mask="false">8000</Config>
+  <Config Name="USE_HTTP_LOGGER" Target="USE_HTTP_LOGGER" Default="true" Mode="" Description="Log every HTTP request" Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+  <Config Name="ENTITLEMENT_ENABLED" Target="ENTITLEMENT_ENABLED" Default="false" Mode="" Description="false = no plan limits (self-hosted)" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="APP_NAME" Target="APP_NAME" Default="httpSMS" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="false">httpSMS</Config>
+  <Config Name="APP_URL" Target="APP_URL" Default="http://UNRAID-IP:3000" Mode="" Description="Public URL of the web UI (used in emails)" Type="Variable" Display="always" Required="true" Mask="false">http://UNRAID-IP:3000</Config>
+  <Config Name="SWAGGER_HOST" Target="SWAGGER_HOST" Default="UNRAID-IP:8000" Mode="" Description="host:port of this API as reached by browsers" Type="Variable" Display="advanced" Required="false" Mask="false">UNRAID-IP:8000</Config>
+
+  <!-- Database / cache (your existing services) -->
+  <Config Name="DATABASE_URL" Target="DATABASE_URL" Default="" Mode="" Description="PostgreSQL DSN. Use host.docker.internal for a Postgres on the Unraid host, or the container name if on the same custom network" Type="Variable" Display="always" Required="true" Mask="true">postgresql://user:password@host.docker.internal:5432/httpsms</Config>
+  <Config Name="DATABASE_URL_DEDICATED" Target="DATABASE_URL_DEDICATED" Default="" Mode="" Description="Second DSN for heartbeat data; can be identical to DATABASE_URL" Type="Variable" Display="always" Required="true" Mask="true">postgresql://user:password@host.docker.internal:5432/httpsms</Config>
+  <Config Name="REDIS_URL" Target="REDIS_URL" Default="" Mode="" Description="Redis URL. Use rediss:// for TLS" Type="Variable" Display="always" Required="true" Mask="true">redis://@host.docker.internal:6379</Config>
+
+  <!-- Firebase (required) -->
+  <Config Name="GCP_PROJECT_ID" Target="GCP_PROJECT_ID" Default="" Mode="" Description="Firebase project ID" Type="Variable" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="FIREBASE_CREDENTIALS" Target="FIREBASE_CREDENTIALS" Default="" Mode="" Description="Entire contents of the Firebase service-account JSON file, on one line" Type="Variable" Display="always" Required="true" Mask="true"></Config>
+
+  <!-- Events queue (in-process emulator; needs a system user created in the users table) -->
+  <Config Name="EVENTS_QUEUE_TYPE" Target="EVENTS_QUEUE_TYPE" Default="emulator" Mode="" Description="emulator = in-process queue, no Google Cloud Tasks" Type="Variable" Display="advanced" Required="true" Mask="false">emulator</Config>
+  <Config Name="EVENTS_QUEUE_NAME" Target="EVENTS_QUEUE_NAME" Default="events-local" Mode="" Description="" Type="Variable" Display="advanced" Required="true" Mask="false">events-local</Config>
+  <Config Name="EVENTS_QUEUE_ENDPOINT" Target="EVENTS_QUEUE_ENDPOINT" Default="http://localhost:8000/v1/events" Mode="" Description="URL the API calls itself on; localhost works inside the container" Type="Variable" Display="advanced" Required="true" Mask="false">http://localhost:8000/v1/events</Config>
+  <Config Name="EVENTS_QUEUE_USER_ID" Target="EVENTS_QUEUE_USER_ID" Default="" Mode="" Description="ID of the system user row you create in the users table" Type="Variable" Display="always" Required="true" Mask="false">system-user-id</Config>
+  <Config Name="EVENTS_QUEUE_USER_API_KEY" Target="EVENTS_QUEUE_USER_API_KEY" Default="" Mode="" Description="API key of that system user" Type="Variable" Display="always" Required="true" Mask="true">system-user-api-key</Config>
+
+  <!-- SMTP -->
+  <Config Name="SMTP_HOST" Target="SMTP_HOST" Default="" Mode="" Description="" Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="SMTP_PORT" Target="SMTP_PORT" Default="587" Mode="" Description="" Type="Variable" Display="always" Required="false" Mask="false">587</Config>
+  <Config Name="SMTP_USERNAME" Target="SMTP_USERNAME" Default="" Mode="" Description="" Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="SMTP_PASSWORD" Target="SMTP_PASSWORD" Default="" Mode="" Description="" Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="SMTP_FROM_NAME" Target="SMTP_FROM_NAME" Default="httpSMS" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="false">httpSMS</Config>
+  <Config Name="SMTP_FROM_EMAIL" Target="SMTP_FROM_EMAIL" Default="" Mode="" Description="" Type="Variable" Display="always" Required="false" Mask="false"></Config>
+
+  <!-- Optional -->
+  <Config Name="CLOUDFLARE_TURNSTILE_SECRET_KEY" Target="CLOUDFLARE_TURNSTILE_SECRET_KEY" Default="" Mode="" Description="Captcha on /v1/messages/search" Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+  <Config Name="GCS_BUCKET_NAME" Target="GCS_BUCKET_NAME" Default="" Mode="" Description="Leave empty for in-memory attachment storage" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="PUSHER_APP_ID" Target="PUSHER_APP_ID" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="PUSHER_KEY" Target="PUSHER_KEY" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="PUSHER_SECRET" Target="PUSHER_SECRET" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+  <Config Name="PUSHER_CLUSTER" Target="PUSHER_CLUSTER" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="AXIOM_TOKEN" Target="AXIOM_TOKEN" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+  <Config Name="AXIOM_DATASET_EVENTS" Target="AXIOM_DATASET_EVENTS" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="AXIOM_DATASET_METRICS" Target="AXIOM_DATASET_METRICS" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+</Container>
