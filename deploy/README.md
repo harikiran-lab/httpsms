@@ -42,6 +42,10 @@ Extra tags per build: short commit (`f352d81`) and date (`20261107`).
 
 ## Notes
 
+- The web image is built from `deploy/web.Dockerfile`, not `web/Dockerfile`. It is the same file
+  with Node and pnpm pinned to what upstream CI uses (Node 24, pnpm 11.11.0); the upstream
+  Dockerfile pulls the newest pnpm, which has moved a major ahead of the lockfile and fails.
+
 - The upstream `web.yml` and `api.yml` workflows also run on this fork. The `web.yml` deploy job
   will fail because it needs Cloudflare/Firebase secrets you don't have; that is harmless. Disable
   it under Actions if the red X bothers you.
